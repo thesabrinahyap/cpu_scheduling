@@ -61,6 +61,21 @@ class CpuScheduler:
                 self.__readyQueue.pop(0)
             counter+=1
     
+    def shortestJobFirst(self):
+        counter = 0
+        processLock = 0  #Locks process until it is done
+        while(len(self.__sortedProcess) != 0 or len(self.__readyQueue) != 0):
+            if(len(self.__sortedProcess) != 0 and self.__sortedProcess[0].getArrivalTime() <= counter): #Stores processes to the ready queue
+                self.__readyQueue.append(self.__sortedProcess[0])
+                self.__sortedProcess.pop(0)
+            if(counter >= processLock and len(self.__readyQueue) != 0):
+                self.__readyQueue = self.sortProcessByBurstTime(self.__readyQueue)      #Sorts readyqueue by burst time
+                process = self.__readyQueue[0]
+                processLock = process.getBurstTime() + counter
+                self.__ganttChart.append(Gantt(process.getProcessId(),process.getArrivalTime(), process.getBurstTime(), counter, processLock))
+                self.__readyQueue.pop(0)
+            counter+=1
+    
     def displayGanttChart(self):
         col_names = ["Process", "Arrival Time", "Burst Time", "Start Time", "End Time", "Turn Arround Time", "Waiting Time"]
         totalBurstTime = 0
@@ -92,6 +107,9 @@ class CpuScheduler:
     def sortProcessByArrivalTime(self, processes):
         self.__sortedProcess = sorted(processes, key=lambda process: process.getArrivalTime())
     
+    def sortProcessByBurstTime(self, processes):
+        return sorted(processes, key=lambda process: process.getBurstTime())
+    
 
 class Menu:
     processes = []
@@ -102,12 +120,15 @@ class Menu:
         burstTime = int(input("CPU Burst Time: "))
         processes.append(Process(arrivalTime, burstTime, None))
     
-    print("[1] First Come First Serve")
+    print("[1] First Come First Serve\n[2] Shortest Job First")
     algorithm = int(input())
     cpuScheduler = CpuScheduler(processes)
     match algorithm:
         case 1:
             cpuScheduler.firstComeFirstServe()
+            cpuScheduler.displayGanttChart()
+        case 2:
+            cpuScheduler.shortestJobFirst()
             cpuScheduler.displayGanttChart()
 
 
