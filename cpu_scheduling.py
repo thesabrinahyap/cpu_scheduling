@@ -11,6 +11,7 @@ class Process:
         self.arrivalTime = arrivalTime
         self.burstTime = burstTime
         self.priority = priority
+        self.remainingTime = burstTime
     
     def getProcessId(self):
         return self.processId
@@ -20,13 +21,17 @@ class Process:
         return self.burstTime
     def getPriority(self):
         return self.priority
+    def getRemainingTime(self):
+        return self.remainingTime
+    def setRemainingTime (self, remainingTime):
+        self.remainingTime =  remainingTime
 
 class Gantt:
     def __init__(self, processId, arrivalTime, burstTime, startTime, endTime):
         self.processId = processId
         self.arrivalTime = arrivalTime
-        self.startTime = startTime
         self.burstTime = burstTime
+        self.startTime = startTime
         self.endTime = endTime
         
     def getProcessId(self):
@@ -39,6 +44,8 @@ class Gantt:
         return self.startTime
     def getEndTime(self):
         return self.endTime
+    def setEndTime (self, newEndTime):
+        self.endTime = newEndTime
     
 class CpuScheduler:
     __ganttChart = []
@@ -91,6 +98,35 @@ class CpuScheduler:
                 self.__readyQueue.pop(0)
             counter+=1
     
+    def priorityPreemptive(self):
+        counter = 0
+        process = None
+        while(self.__sortedProcess != None or len(self.__readyQueue) != 0):
+            if(len(self.__sortedProcess) != 0 and self.__sortedProcess[0].getArrivalTime() <= counter): #Stores processes to the ready queue
+                if(len(self.__readyQueue) != 0):    #Preempts process if another process arrived and there is a process in the ready queue
+                    self.__readyQueue.append(self.__readyQueue[0])
+                    self.__readyQueue.pop(0)
+                self.__readyQueue.append(self.__sortedProcess[0])
+                self.__sortedProcess.pop(0)
+                self.__readyQueue = self.sortProcessByPriority(self.__readyQueue)      #Sorts readyqueue by priority
+                process = self.__readyQueue[0]
+                self.__ganttChart.append(Gantt(process.getProcessId(),process.getArrivalTime(), process.getBurstTime(), counter, 0))
+            if(len(self.__readyQueue) != 0 ):
+                if(process.getRemainingTime() > 0):
+                    process.setRemainingTime(process.getRemainingTime() - 1)
+                    if (process.getRemainingTime() <= 0):
+                        index = next((i for i, item in enumerate(self.__ganttChart) if item.getProcessId() == process.getProcessId()), -1)
+                        self.__ganttChart[index].setEndTime(counter + 1)
+                        self.__readyQueue.pop(0)
+                        if(len(self.__readyQueue) != 0):
+                            process = self.__readyQueue[0]
+            if(len(self.__readyQueue) == 0 and len(self.__sortedProcess) == 0):
+                self.__sortedProcess = None
+            counter+=1
+            self.__displayCurrentProcess(counter)
+
+            
+    
     def displayGanttChart(self):
         col_names = ["Process", "Arrival Time", "Burst Time", "Start Time", "End Time", "Turn Arround Time", "Waiting Time"]
         totalBurstTime = 0
@@ -128,10 +164,19 @@ class CpuScheduler:
     def sortProcessByPriority(self, processes):
         return sorted(processes, key=lambda process: process.getPriority())
     
+    def __displayCurrentProcess(self,counter):
+        try:
+            print(self.__readyQueue)
+            print(self.__readyQueue[0].getProcessId())
+            print(self.__readyQueue[0].getRemainingTime())
+            print(counter)
+        except:
+            ...
+    
 
 class Menu:
     processes = []
-    print("[1] First Come First Serve\n[2] Shortest Job First\n[3] Priority Non Preemptive")
+    print("[1] First Come First Serve\n[2] Shortest Job First\n[3] Priority Non Preemptive\n[4] Priority Preemptive")
     algorithm = int(input())
     numberOfProcess = int(input("Number of Processes: "))
     priority = None
@@ -139,7 +184,7 @@ class Menu:
         print("Process " + str(x + 1))
         arrivalTime = int(input("Arrival Time: "))
         burstTime = int(input("CPU Burst Time: "))
-        if(algorithm == 3):
+        if(algorithm == 3 or algorithm == 4):
             priority = int(input("Priority: "))
         processes.append(Process(arrivalTime, burstTime, priority))
     
@@ -148,13 +193,13 @@ class Menu:
     match algorithm:
         case 1:
             cpuScheduler.firstComeFirstServe()
-            cpuScheduler.displayGanttChart()
         case 2:
             cpuScheduler.shortestJobFirst()
-            cpuScheduler.displayGanttChart()
         case 3:
             cpuScheduler.priorityNonPreemptive()
-            cpuScheduler.displayGanttChart()
+        case 4:
+            cpuScheduler.priorityPreemptive()
+    cpuScheduler.displayGanttChart()
 
 
 def main():
