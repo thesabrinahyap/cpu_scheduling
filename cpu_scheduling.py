@@ -25,6 +25,8 @@ class Process:
         return self.remainingTime
     def setRemainingTime (self, remainingTime):
         self.remainingTime =  remainingTime
+    def decreaseBurstTime(self,time):
+        self.burstTime -= time
 
 class Gantt:
     def __init__(self, processId, arrivalTime, burstTime, startTime, endTime):
@@ -46,6 +48,8 @@ class Gantt:
         return self.endTime
     def setEndTime (self, newEndTime):
         self.endTime = newEndTime
+    def decreaseBurstTime(self,time):
+        self.burstTime -= time
     
 class CpuScheduler:
     __ganttChart = []
@@ -125,6 +129,40 @@ class CpuScheduler:
             counter+=1
             self.__displayCurrentProcess(counter)
 
+    # This code has issues in line 156, ZeroDivisionError
+    def roundRobin(self, timeSlice):
+        counter = 0
+        processQueue = []  # Circular queue for processes
+        currentProcessIndex = 0  # Index of the current process in the queue
+
+        while len(self.__sortedProcess) != 0 or processQueue:
+            if len(self.__sortedProcess) != 0 and self.__sortedProcess[0].getArrivalTime() <= counter:
+                processQueue.append(self.__sortedProcess.pop(0))
+
+            if processQueue:
+                process = processQueue[currentProcessIndex]
+                if process.getBurstTime() > timeSlice:
+                    self.__ganttChart.append(Gantt(process.getProcessId(), process.getArrivalTime(), timeSlice, counter, counter + timeSlice))
+                    counter += timeSlice
+                    process.decreaseBurstTime(timeSlice)
+                    processQueue.append(process)  # Put the process back in the queue
+                else:
+                    self.__ganttChart.append(Gantt(process.getProcessId(), process.getArrivalTime(), process.getBurstTime(), counter, counter + process.getBurstTime()))
+                    counter += process.getBurstTime()
+                    processQueue.pop(currentProcessIndex)
+                    print("Current Process Index + 1: %d" %(currentProcessIndex+1))
+                    print("Process Queue: %d" %(len(processQueue)))
+
+            currentProcessIndex = (currentProcessIndex + 1) % len(processQueue)
+            counter += 1
+
+    def calculateAverageTurnAroundTime(self):
+        totalTurnAroundTime = sum(chart.getBurstTime() for chart in self.__ganttChart)
+        if len(self.__ganttChart) > 0:
+            averageTurnAroundTime = totalTurnAroundTime / len(self.__ganttChart)
+            return averageTurnAroundTime
+        else:
+            return 0.0  # Return 0 if there are no processes in the Gantt Chart
             
     
     def displayGanttChart(self):
@@ -176,9 +214,11 @@ class CpuScheduler:
 
 class Menu:
     processes = []
-    print("[1] First Come First Serve\n[2] Shortest Job First\n[3] Priority Non Preemptive\n[4] Priority Preemptive")
+    print("[1] First Come First Serve\n[2] Shortest Job First\n[3] Priority Non Preemptive\n[4] Priority Preemptive\n[5] Round Robin")
     algorithm = int(input())
     numberOfProcess = int(input("Number of Processes: "))
+    if(algorithm == 5):
+        timeSlice  = int(input("Time Slice: "))
     priority = None
     for x in range(numberOfProcess):
         print("Process " + str(x + 1))
@@ -199,6 +239,9 @@ class Menu:
             cpuScheduler.priorityNonPreemptive()
         case 4:
             cpuScheduler.priorityPreemptive()
+        case 5:
+            cpuScheduler.roundRobin(timeSlice)
+            
     cpuScheduler.displayGanttChart()
 
 
