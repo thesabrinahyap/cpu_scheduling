@@ -18,6 +18,8 @@ from PriorityPreemptive import PriorityPreemptive
 from RoundRobin import RoundRobin
 from ShortestRemainingJobFirst import ShortestRemainingJobFirst
 from MultiLevelQueue import MultiLevelQueue
+from MultiLevelFeedbackQueue import MultiLevelFeedbackQueue
+
 
 
 views = Blueprint(__name__, "views")
