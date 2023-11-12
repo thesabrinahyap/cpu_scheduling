@@ -102,7 +102,7 @@ class CpuScheduler:
                 self.__readyQueue.pop(0)
             counter+=1
     
-    def priorityPreemptive(self):
+    def PriorityPreemptivereemptive(self):
         counter = 0
         process = None
         while(self.__sortedProcess != None or len(self.__readyQueue) != 0):
@@ -238,7 +238,7 @@ class Menu:
         case 3:
             cpuScheduler.priorityNonPreemptive()
         case 4:
-            cpuScheduler.priorityPreemptive()
+            cpuScheduler.PriorityPreemptivereemptive()
         case 5:
             cpuScheduler.roundRobin(timeSlice)
             
